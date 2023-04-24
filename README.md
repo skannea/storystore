@@ -1,4 +1,24 @@
-# Storysave
+# What is Storystore?
+Storystore is a simple approach to storing time stamped HA data and transfer of that data to web applications.
+Data is primarilly state changes that the web application may show as logs or charts. 
+
+Storystore uses
+HA helper entity attributes and python_script for storage of data
+HA automations for storage updating and publishing 
+MQTT publish and subscribe for transferring data to web applications
+MQTT retained messages for non-volatile storage of data
+
+Typical storystore sequence
+an automation based on blueprint `storystore.yaml` triggers state change of `switch.door`
+firts action is to call python_script `storystore.py` which
+reads a set of records from the `story` attribute of a dedicated storage entity `input_text.doorlog` 
+adds a new record about the state change and removes the oldest record
+writes all records to the `story` attribute of `input_text.doorlog` 
+second action is to publish a retained MQTT message with topic `storystore/doorlog` and a payload that contains the `story` attribute
+a web application subscribing for `storystore/doorlog` topic receives the message  
+the web application calls `story.idstateRows` to get the records as an array of objects
+
+
 
 # Storysave blueprint
 
