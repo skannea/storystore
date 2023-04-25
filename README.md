@@ -55,13 +55,97 @@ The service takes the following arguments:
 One and only one of arguments restore, logstring, logidstate or logstate shall be provided. 
 
 ## JavaScript functions
-A web application have to set up MQTT and, when connection is established, subscribe for the MQTT topic.
-On reception of an MQTT message, the application must be aware of the format of the payload and use the proper function for decoding. 
+A web application have to set up MQTT and, when connection is established, subscribe for the MQTT topic. See skannea/mqtt project.   
+
+On reception of an MQTT message, the application must be aware of the format of the payload and use the proper function for decoding. The `story` object in file `story.js` contains functions for decoding.
+
+### textRows
+Function `story.textRows(data)` converts data and returns an array with one element for each record. First element is the oldest record. Each element is an array with time stamp as first element followed by all texts separated by vertical bar. 
+
+Example data: `11:33:55|abra|kadabra;12:34:56|hocus|pocus;12:35:12|the end`
+Example result: `[['11:33:55','abra','kadabra'],['11:34:15','hocus','pocus'],['11:38:57','the end']]`
+
+Example code:
+
+~~~
+function myLog( data ) {
+   var v = story.textRows( data );
+   var html = '<b>History</b>';
+   for ( var n=0; n<v.length; n++ ) 
+      html += `<br>At ${v[n][0]} ${v[n][1]} took place.`
+   document.getElementById( 'mylog' ).innerHTML = html;
+}
+~~~
+
+### idstateRows
+Function `story.idstateRows(data)` works with automations based on blueprint *Storystore state logger*. It converts data and returns an array with one element for each record. First element is the oldest record. Each element is an object with properties named `stamp`, `id` and `state`.  
+
+Example data: `11:33:55|sensor.a|47.0;12:34:56|sensor.b|27.4;12:35:12|sensor.b|27.8`
+Example result: `[{ stamp:'11:33:55',id:'sensor.a',state:'47.0' },{ stamp:'12:34:56',id:'sensor.b',state:'27.4' },{ stamp:'12:35:12',id:'sensor.b',state:'27.8' }]`
+
+Example code:
+
+~~~
+function myTable( data ) {
+   var v = story.idstateRows( data );
+    
+   var html = '<table>';
+   for ( var n=0; n<v.length; n++ ) {  
+             html += `<tr>
+                       <td>${v[n].stamp}</td>
+                       <td>${v[n].id}</td>
+                       <td>${v[n].state}</td>
+                      </tr>`; 
+          }
+   html += '</table>';
+   document.getElementById( 'mytable' ).innerHTML = html;
+}
+~~~
+
+### idstateCols
+idstateCols`| One object with properties named `stamps`, `ids` and `states`, where `stamps` %%%, `ids` and `states`.array for each record with time stamp as first element followed by all texts separated by vertical bar.|Storystore state logger
+// 11:33:55|sensor.a|47.0|sensor.b|27.5|sensor.c|0.5;12:34:56|sensor.a|47.1|sensor.b|27.4|sensor.c|0.5
+// { stamps:['11:33:55','12:34:56'], ids:[ 'sensor.a', 'sensor.b', 'sensor.c' ],  states:[['47.0','47.1'],['27.5','27.4'],['0.5','0.5']] } 
+// assume stamp|id|state, sort records and make { stamps:[], ids:[], states:[] } where states[n][t]-->stamps[t], ids[n]  
+
+Function `story.idstateCols(data)` works with automations based on blueprint *Storystore period logger* and . It converts data and returns an object with four properties:
+- `stamps` which is an array of time stamps (oldest first)
+- `ids` which is an array of the entity ids 
+- `states` which is an array of arrays, where first index addresses time stamp and the second index addresses entity id.  
+
+Example data: `11:33:55|sensor.a|47.0|sensor.b|27.5|sensor.c|0.5;12:34:56|sensor.a|47.1|sensor.b|27.4|sensor.c|0.5`
+Example result: `{ stamps:['11:33:55','12:34:56'], ids:[ 'sensor.a', 'sensor.b', 'sensor.c' ],  states:[['47.0','47.1'],['27.5','27.4'],['0.5','0.5']] }`
+
+Example code:%%
+
+~~~
+function myTable( data ) {
+   var v = story.idstateRows( data );
+    
+   var html = '<table>';
+   for ( var n=0; n<v.length; n++ ) {  
+             html += `<tr>
+                       <td>${v[n].stamp}</td>
+                       <td>${v[n].id}</td>
+                       <td>${v[n].state}</td>
+                      </tr>`; 
+          }
+   html += '</table>';
+   document.getElementById( 'mytable' ).innerHTML = html;
+}
+~~~
+
+
+
+|`idstateRows`| One array for all records, each with one object with properties named `stamp`, `id` and `state`.array for each record with time stamp as first element followed by all texts separated by vertical bar.|Storystore state logger
+|`idstateCols`| One object with properties named `stamps`, `ids` and `states`, where `stamps` %%%, `ids` and `states`.array for each record with time stamp as first element followed by all texts separated by vertical bar.|Storystore state logger
+
 | function |result|supports blueprint|
 | --------  | ----|------ |
 |`textRows`| One array for all records, each with one array for each record with time stamp as first element followed by all texts separated by vertical bar.|Storystore state logger
 |`idstateRows`| One array for all records, each with one object with properties named `stamp`, `id` and `state`.array for each record with time stamp as first element followed by all texts separated by vertical bar.|Storystore state logger
 |`idstateCols`| One object with properties named `stamps`, `ids` and `states`, where `stamps` %%%, `ids` and `states`.array for each record with time stamp as first element followed by all texts separated by vertical bar.|Storystore state logger
+
 
 // make one array per record
 textRows: function ( data ) {
