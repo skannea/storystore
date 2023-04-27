@@ -1,15 +1,16 @@
 # What is Storystore?
 Storystore is a way to store time stamped HA data and transfer that data to web applications.
-Data is primarilly state changes that the web application may show as logs or charts. - 
+Typically, data are state changes that the web application may show as logs or charts.  
 
 Storystore uses
-HA helper entity attributes and python_script for storage of data
-HA automations for storage updating and publishing 
-MQTT publish and subscribe for transferring data to web applications
-MQTT retained messages for non-volatile storage of data
+- HA helper entity attributes and python_script based service for storage of data
+- HA automations for storage updating and publishing 
+- MQTT publish and subscribe for transferring data to web applications
+- MQTT retained messages for non-volatile storage of data
 
 Example storystore sequence
-- an automation based on blueprint `storystore.yaml` triggers on state change of `switch.door`
+
+- an automation based on blueprint `storystorestate.yaml` triggers on state change of `switch.door`
 - first action is to call a python_script `storystore.py` which
     - reads a set of records from the `story` attribute of a dedicated entity `input_text.doorlog` 
     - adds a new record with time stamp and new state and removes the oldest record
@@ -22,22 +23,30 @@ Example storystore sequence
 # Storystore resources
 
 ## Blueprints
+
 | blueprint |description|yaml|typical use|
 | --------  | -----     |----|----- |
 |Storystore state logger| For logging of entities. When one entity changes, only that entity is logged.|storystorestate.yaml|table|
 |Storystore periodic logger| For periodic logging of entities. Each time all entities are logged.|storystoreperiod.yaml|chart|  
 |Storystore chart logger| For logging of entities. When one entity changes, all entities are logged.|storystorechart.yaml|chart|
+
 All blueprints have inputs for 
+
 - the list of entities to log
 - the entity to use for storage
 - the number of records to store 
 - the MQTT topic to use 
 
 ## Service
-Python scripts that can be used as HA services must follow a number of [restrictions](https://www.home-assistant.io/integrations/python_script/) 
-A service `python_script.storystore` is based on `storystore.py`. The service may be used for persistant logging and storing of data. The python script uses an attribute of a dedicated entity for storing a list of records with time stamp and a set of strings. A new record is put last in the list. The oldest one may be removed to ensure there are no more than MAX records in the list.  
+
+Python scripts that can be used as HA services must follow a number of [restrictions](https://www.home-assistant.io/integrations/python_script/).
+
+A service `python_script.storystore` is based on `storystore.py`. The service may be used for persistant logging and storing of data. The python script uses an attribute of a dedicated entity for storing a list of records with time stamp and a set of strings. A new record is put last in the list. The oldest one may be removed to ensure there is a limited number of records in the list.  
+
 Records are separated with semicolon `;` and parts within a record are separated with vertical bar `|`. These characters must not be used in text.
+
 The service takes the following arguments:
+
 | argument | code |description|default
 | -------- | -----|---------- |-----
 |useentity |      |entity id of entity to use for storing records| mandatory
@@ -52,14 +61,16 @@ The service takes the following arguments:
 |logidstate|      |array of entities whose ids and states are put in a record like: 2023-03-26 13:47:55.4545\|light.lamp\|ON\|sensor.temp\|21.4; |see below
 |logstate  |      |array of entities whose states are put in a record like: 2023-03-26 13:47:55.4545\|ON\|21.4; |see below
 
-One and only one of arguments restore, logstring, logidstate or logstate shall be provided. 
+One and only one of arguments *restore*, *logstring*, *logidstate* or *logstate* must be provided. 
 
 ## JavaScript functions
+
 A web application have to set up MQTT and, when connection is established, subscribe for the MQTT topic. See skannea/mqtt project.   
 
 On reception of an MQTT message, the application must be aware of the format of the payload and use the proper function for decoding. The `story` object in file `story.js` contains functions for decoding.
 
 ### textRows
+
 Function `story.textRows(data)` converts data and returns an array with one element for each record. First element is the oldest record. Each element is an array with time stamp as first element followed by all texts separated by vertical bar. 
 
 Example data: `11:33:55|abra|kadabra;12:34:56|hocus|pocus;12:35:12|the end`
