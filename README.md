@@ -151,6 +151,20 @@ function myTable( data ) {
 textRows: function ( data ) {
 assume stamp|id|state, sort records and make { stamps:[], ids:[], states:[] } where states[n][t]-->stamps[t], ids[n]  
 
+# Preservation
+Storystore uses a dedicated custom entity attribute for storing data records. An entity state has a size limit of 255 bytes. A custom attribute has no such limit.
+However, after a Home Assistant restart, all custom attributes are lost. In order to make the records survive a restart, the MQTT retain mechanism is used. 
+
+When a new record is added, the attribute is updated and a MQTT message is sent with the same content as the attribute. This message has the retined flag set. When an application is staretd, it starts subscribing for a topic. If there is a retained message with that topic, it is sent to the client. That means that whenever the client is started, it gets the proper records. 
+
+The retained message will also be used when Home Assistant is started. The automation will 
+- trig on the Home Assistant start event
+- subscribe for the topic using a `wait_for_trigger` that waits for a MQTT message of that topic
+- get all records from the payload 
+- restore the entity attribute using the Storystore service 
+
+
+
 # Storysave HTML page
 
 JavaScript functions
