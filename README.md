@@ -73,8 +73,13 @@ On reception of an MQTT message, the application must be aware of the format of 
 
 Function `story.textRows(data)` converts data and returns an array with one element for each record. First element is the oldest record. Each element is an array with time stamp as first element followed by all texts separated by vertical bar. 
 
-Example data: `11:33:55|abra|kadabra;12:34:56|hocus|pocus;12:35:12|the end`
-Example result: `[['11:33:55','abra','kadabra'],['11:34:15','hocus','pocus'],['11:38:57','the end']]`
+Example data: 
+
+`11:33:55|abra|kadabra;12:34:56|hocus|pocus;12:35:12|the end`
+
+Example result: 
+
+`[['11:33:55','abra','kadabra'],['11:34:15','hocus','pocus'],['11:38:57','the end']]`
 
 Example code:
 
@@ -89,10 +94,16 @@ function myLog( data ) {
 ~~~
 
 ### idstateRows
+
 Function `story.idstateRows(data)` works with automations based on blueprint *Storystore state logger*. It converts data and returns an array with one element for each record. First element is the oldest record. Each element is an object with properties named `stamp`, `id` and `state`.  
 
-Example data: `11:33:55|sensor.a|47.0;12:34:56|sensor.b|27.4;12:35:12|sensor.b|27.8`
-Example result: `[{ stamp:'11:33:55',id:'sensor.a',state:'47.0' },{ stamp:'12:34:56',id:'sensor.b',state:'27.4' },{ stamp:'12:35:12',id:'sensor.b',state:'27.8' }]`
+Example data: 
+
+`11:33:55|sensor.a|47.0;12:34:56|sensor.b|27.4;12:35:12|sensor.b|27.8`
+
+Example result: 
+
+`[{ stamp:'11:33:55',id:'sensor.a',state:'47.0' },{ stamp:'12:34:56',id:'sensor.b',state:'27.4' },{ stamp:'12:35:12',id:'sensor.b',state:'27.8' }]`
 
 Example code:
 
@@ -114,55 +125,73 @@ function myTable( data ) {
 ~~~
 
 ### idstateCols
-idstateCols`| One object with properties named `stamps`, `ids` and `states`, where `stamps` %%%, `ids` and `states`.array for each record with time stamp as first element followed by all texts separated by vertical bar.|Storystore state logger
-// 11:33:55|sensor.a|47.0|sensor.b|27.5|sensor.c|0.5;12:34:56|sensor.a|47.1|sensor.b|27.4|sensor.c|0.5
-// { stamps:['11:33:55','12:34:56'], ids:[ 'sensor.a', 'sensor.b', 'sensor.c' ],  states:[['47.0','47.1'],['27.5','27.4'],['0.5','0.5']] } 
-// assume stamp|id|state, sort records and make { stamps:[], ids:[], states:[] } where states[n][t]-->stamps[t], ids[n]  
 
-Function `story.idstateCols(data)` works with automations based on blueprint *Storystore period logger* and . It converts data and returns an object with four properties:
+Function `story.idstateCols(data)` works with automations based on blueprint *Storystore chart logger* and *Storystore periodic logger*. It converts data and returns an object with three properties:
+
 - `stamps` which is an array of time stamps (oldest first)
 - `ids` which is an array of the entity ids 
 - `states` which is an array of arrays, where first index addresses time stamp and the second index addresses entity id.  
 
-Example data: `11:33:55|sensor.a|47.0|sensor.b|27.5|sensor.c|0.5;12:34:56|sensor.a|47.1|sensor.b|27.4|sensor.c|0.5`
-Example result: `{ stamps:['11:33:55','12:34:56'], ids:[ 'sensor.a', 'sensor.b', 'sensor.c' ],  states:[['47.0','47.1'],['27.5','27.4'],['0.5','0.5']] }`
+Return data is useful when making charts based on *charts.js*.
 
-Example code:%%
+Example data: 
+
+`11:33:55|sensor.a|47.0|sensor.b|27.5|sensor.c|0.5;12:34:56|sensor.a|47.1|sensor.b|27.4|sensor.c|0.5`
+
+Example result: 
+
+`{ stamps:['11:33:55','12:34:56'], ids:[ 'sensor.a', 'sensor.b', 'sensor.c' ],  states:[['47.0','47.1'],['27.5','27.4'],['0.5','0.5']] }`
+
+Example code:
 
 ~~~
-function myTable( data ) {
-   var v = story.idstateRows( data );
-    
-   var html = '<table>';
-   for ( var n=0; n<v.length; n++ ) {  
-             html += `<tr>
-                       <td>${v[n].stamp}</td>
-                       <td>${v[n].id}</td>
-                       <td>${v[n].state}</td>
-                      </tr>`; 
-          }
-   html += '</table>';
-   document.getElementById( 'mytable' ).innerHTML = html;
-}
+tempChart = new Chart(document.getElementById("tempgraph"), tempChartConfig );
+// tempChartConfig is not shown here
+function tempDiagram( data ) { 
+   var ax = story.idstateCols( data );
+   tempChart.data.labels = story.to_hm(ax.stamps);
+   tempChart.data.datasets[0].data = ax.states[0];
+   tempChart.data.datasets[1].data = ax.states[1];
+   tempChart.update();
+}     
 ~~~
 
 
+### stateCols
 
-|`idstateRows`| One array for all records, each with one object with properties named `stamp`, `id` and `state`.array for each record with time stamp as first element followed by all texts separated by vertical bar.|Storystore state logger
-|`idstateCols`| One object with properties named `stamps`, `ids` and `states`, where `stamps` %%%, `ids` and `states`.array for each record with time stamp as first element followed by all texts separated by vertical bar.|Storystore state logger
+Function `story.stateCols(data)` works with automations based on blueprint *Storystore chart logger* and *Storystore periodic logger*. It converts data and returns an object with two properties:
 
-| function |result|supports blueprint|
-| --------  | ----|------ |
-|`textRows`| One array for all records, each with one array for each record with time stamp as first element followed by all texts separated by vertical bar.|Storystore state logger
-|`idstateRows`| One array for all records, each with one object with properties named `stamp`, `id` and `state`.array for each record with time stamp as first element followed by all texts separated by vertical bar.|Storystore state logger
-|`idstateCols`| One object with properties named `stamps`, `ids` and `states`, where `stamps` %%%, `ids` and `states`.array for each record with time stamp as first element followed by all texts separated by vertical bar.|Storystore state logger
+- `stamps` which is an array of time stamps (oldest first)
+- `states` which is an array of arrays, where first index addresses time stamp and the second index addresses entity.  
 
+Return data is useful when making charts based on *charts.js*.
 
-// make one array per record
-textRows: function ( data ) {
-assume stamp|id|state, sort records and make { stamps:[], ids:[], states:[] } where states[n][t]-->stamps[t], ids[n]  
+The difference from `story.idstateCols` is that no information on entity ids is present. The list of entities must be known.
 
-# Preservation
+Example data: 
+
+`11:33:55|47.0|27.5|0.5;12:34:56|47.1|27.4|0.5`
+
+Example result: 
+
+`{ stamps:['11:33:55','12:34:56'], states:[['47.0','47.1'],['27.5','27.4'],['0.5','0.5']] }`
+
+Example code:
+
+~~~
+tempChart = new Chart(document.getElementById("tempgraph"), tempChartConfig );
+// tempChartConfig is not shown here
+function tempDiagram( data ) { 
+   var ax = story.stateCols( data );
+   tempChart.data.labels = story.to_hm(ax.stamps);
+   tempChart.data.datasets[0].data = ax.states[0];
+   tempChart.data.datasets[1].data = ax.states[1];
+   tempChart.update();
+}     
+~~~
+
+# Data preservation
+
 Storystore uses a dedicated custom entity attribute for storing data records. An entity state has a size limit of 255 bytes. A custom attribute has no such limit.
 However, after a Home Assistant restart, all custom attributes are lost. In order to make the records survive a restart, the MQTT retain mechanism is used. 
 
@@ -173,55 +202,4 @@ The retained message will also be used when Home Assistant is started. The autom
 - subscribe for the topic using a `wait_for_trigger` that waits for a MQTT message of that topic
 - get all records from the payload 
 - restore the entity attribute using the Storystore service 
-
-
-
-# Storysave HTML page
-
-JavaScript functions
-
-story.loglines( DATA, LOGENTITY )
-datetime(N) 
- --> 2023-03-25 15:04:07.396834     
-hms( n )  
-//2023-03-25 15:04:07.396834 --> 15:04:07    
-hmsf( n ) {
-//2023-03-25 15:04:07.396834 --> 15:04:07.39    
- text( n ) {
-array( n ) 
-
-
-blueprint:
-  name: Storysave logger  
-  description: |-
-     Automation for logging state changes of entities as records in a dedicated Storysave entity's *story* attribute. 
-     Requires *python_script.storysave*. 
-     Stored as <Timestamp>#<Log type>#<Logged state>#<Logged entity_id>;<next record... 
-     for example # 2023-03-26 13:47:55.4545#INFO#Event happened#sensor.msg;2023-03-26 13:44:53#INFO#Event...
-      
-
-# storysave - HA python_script for persistant logging and storing 
-# This service uses an entity (ENT) for storing records with time stamp and a string (STRING).
-# The entity should be an input_text helper entity (others may work).
-# The records are put as an attribute named 'story'.
-# The service stores a maximum (MAX) of records: the oldest is removed when necessary.  
-# The entity's state is updated with the new string.
-# Restore mode (restore: long string) means that story attribute is to be set to that long string. 
-# Restore is used when HA is restarted.
-
-# Service call in yaml:
-
-# service: python_script.storysave
-# data:
-#   entity_id: ENT  # default is input_text.history
-#   log: STRING     # default is an empty string, STRING must not contain ';' or '#'
-#   max: MAX        # default is 10
-#   restore: R      # default is '' which means normal operation, do not restore 
-
-entity_id = data.get("entity_id", 'input_text.history')
-log = data.get("log", "" )
-restore = data.get("restore", "" )
-max = int(data.get("max", "10"))
-# record format is  2023-03-26 13:47:55.4545#<STRING>Event happened again;2023-03-26 13:44:53#Event happened first time
-# latest is first, split records on ;, split time/log on #
 
