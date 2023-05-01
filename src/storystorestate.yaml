@@ -1,0 +1,115 @@
+blueprint:
+  name: Storystore state logger  
+  description: |-
+     Automation for logging state changes of entities as records in a dedicated Storystore entity's *story* attribute. 
+     Requires *python_script.storystore*.
+     When one entity changes, only that entity is logged.
+      
+  domain: automation 
+  input:
+    ents:   
+      name: Logged entities 
+      description: "Entities to be logged." 
+      selector:
+        entity:
+          multiple: true
+         
+    storageentity:   
+      name: Storage entity 
+      description: "Entity (input_text) to be used for log records." 
+      selector:
+        entity:
+          multiple: false
+          domain: input_text
+          
+    maxsize:   
+      name: Storage size 
+      description: "Max number of records in log."  
+      default: 10
+      selector:
+        number:
+          min: 4
+          max: 100
+          mode: box
+
+    topic:   
+      name: Topic 
+      description: "Outgoing topic for logging" 
+      default: "toweb/storysave/logname"
+      selector:
+        text:
+
+    tracename:   
+      name: Automation name 
+      description: "Name for trace and debug" 
+      default: "Storystore state logger"
+      selector:
+        text:
+
+variables:
+  storageentity: !input storageentity 
+  maxsize:       !input maxsize 
+  topic:         !input topic 
+  tracename:     !input tracename 
+
+
+
+trigger:
+  - platform: state
+    entity_id:
+      !input ents
+    id: change
+
+  - platform: homeassistant
+    event: start
+    id: start
+
+action: 
+  - choose:
+      - conditions:
+          - condition: trigger
+            id: change
+        sequence:
+          - service: python_script.storystore
+            data:
+                    useentity:  !input storageentity
+                    max: !input maxsize
+                    logstring: "{{trigger.entity_id}}|{{trigger.to_state.state}}"
+            
+          - service: mqtt.publish
+            data:
+              topic: !input topic
+              retain: true
+              payload_template: |-
+                  { 
+                     "ent":   "{{storageentity}}", 
+                     "trig":  "{{trigger.entity_id}}", 
+                     "state": "{{tracename}}, max={{maxsize}}, topic={{topic}}", 
+                     "log":   "{{ state_attr( storageentity, 'story' ) }}" 
+                  }
+      - conditions:
+          - condition: trigger
+            id: start
+        sequence:
+          - wait_for_trigger:
+              - platform: mqtt
+                topic:  !input topic
+            timeout:
+              hours: 0
+              minutes: 0
+              seconds: 10
+              milliseconds: 0
+          - service: python_script.storystore
+            data:
+                    useentity:  !input storageentity
+                    restore: "{{ wait.trigger.payload_json.log }}"
+                    
+
+
+
+                     
+                      
+mode: single
+
+
+
