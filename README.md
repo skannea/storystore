@@ -1,6 +1,7 @@
 # What is Storystore?
-Storystore is a way to store time stamped HA data and transfer that data to web applications.
-Typically, data are state changes that the web application may show as logs or charts.  
+Storystore is a way to store time stamped HA data and transfer that data to web applications. 
+Typically, data are state changes that the web application may show as logs or charts. 
+ 
 
 Storystore uses
 - HA helper entity attributes and python_script based service for storage of data
@@ -52,14 +53,14 @@ The service takes the following arguments:
 |useentity |      |entity id of entity to use for storing records| mandatory
 |useattribute|    |attribute to use for storing records |story
 |usestamp  |      |sets the format to use for records. |full
-|          |full  |like 2023-03-26 13:47:55.4545 |
-|          |hms   |like 13:47:55 |
-|          |hm    |like 13:47 |
+|          |full  |like `2023-03-26 13:47:55.4545` |
+|          |hms   |like `13:47:55` |
+|          |hm    |like `13:47` |
 |max       |      |the maximal number of records to be stored| 10
 |restore   |      |value to completly set the attribute when HA is restarted |see below
 |logstring |      |value (that may contain vertical bars) to put after time stamp in record |see below
 |logidstate|      |array of entities whose ids and states are put in a record like: 2023-03-26 13:47:55.4545\|light.lamp\|ON\|sensor.temp\|21.4; |see below
-|logstate  |      |array of entities whose states are put in a record like: 2023-03-26 13:47:55.4545\|ON\|21.4; |see below
+|logstate  |      |array of entities whose states are put in a record like: `2023-03-26 13:47:55.4545\|ON\|21.4;` |see below
 
 One and only one of arguments *restore*, *logstring*, *logidstate* or *logstate* must be provided. 
 
