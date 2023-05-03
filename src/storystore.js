@@ -1,4 +1,5 @@
 
+// skannea
 // ============================================= Storystore 
 const storystore = { 
 
