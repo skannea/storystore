@@ -24,6 +24,8 @@
 
 # One and only one of restore, logstring, logidstate or logstate shall be provided. 
 
+
+
 useentity    = data.get('useentity', '')
 useattribute = data.get('useattribute', 'story')
 usestamp     = data.get('usestamp', 'full')
