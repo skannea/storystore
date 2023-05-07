@@ -1,359 +1,349 @@
 <!DOCTYPE html>
 <html>
-   <head>
-     <meta charset="utf-8"> 
-     <title>Qdash</title>
-     <link rel="icon" href="../qdashfavicon.ico" type="image/x-icon" />
-   
-     <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.js" type="text/javascript"></script>
-     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
-     <script src="../qdash.js"      type = "text/javascript" ></script>  
-     <script src="../common.js"     type = "text/javascript" ></script>  
-     <script src="../mqtt.js"       type = "text/javascript" ></script>  
-     <script src="../storystore.js" type = "text/javascript" ></script>  
-     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@mdi/font@6.9.96/css/materialdesignicons.min.css">
-     <link rel="stylesheet" href="../qdash.css">
-     <style>
-       h3     { color: blue;  font-size: 200%; }
-       p      { color: green; }
-       table, th, td {   border:1px solid black;padding:5px; }
+  <head>
+    <meta charset="utf-8" />
+    <title>Qdash</title>
+    <link rel="icon" href="../qdashfavicon.ico" type="image/x-icon" />
 
-     </style>
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.js"
+      type="text/javascript"
+    ></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
+    <script src="../qdash.js" type="text/javascript"></script>
+    <script src="../common.js" type="text/javascript"></script>
+    <script src="../mqtt.js" type="text/javascript"></script>
+    <script src="../storystore.js" type="text/javascript"></script>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@mdi/font@6.9.96/css/materialdesignicons.min.css"
+    />
+    <link rel="stylesheet" href="../qdash.css" />
+    <style>
+      h3 {
+        color: blue;
+        font-size: 200%;
+      }
+      p {
+        color: green;
+      }
+      table,
+      th,
+      td {
+        border: 1px solid black;
+        padding: 5px;
+      }
+    </style>
 
-     
-    <script type = "text/javascript" > 
-var powerChart; 
-var tempChart; 
+    <script type="text/javascript">
+      var powerChart;
+      var tempChart;
 
+      // ---------------------------------------------
+      function log(s) {
+        console.log(s);
+        //document.getElementById("log").innerHTML += ('<br>'+s);
+      }
 
-// --------------------------------------------- 
-function log( s ) {
-   console.log( s );
-   //document.getElementById("log").innerHTML += ('<br>'+s);
-}
+      // ---------------------------------------------
+      function timelog(s) {
+        const d = new Date();
+        s = d.toLocaleTimeString() + ": " + s;
+        console.log(s);
+        //document.getElementById("log").innerHTML += ('<br>'+s);
+      }
 
-// --------------------------------------------- 
-function timelog( s ) {
-    const d = new Date();
-    s = d.toLocaleTimeString() + ': ' + s;
-    console.log( s );
-    //document.getElementById("log").innerHTML += ('<br>'+s);
-}
- 
-// --------------------------------------------- 
-function statusline( s ) {
-    document.getElementById("statusline").innerHTML = s;
-}     
+      // ---------------------------------------------
+      function statusline(s) {
+        document.getElementById("statusline").innerHTML = s;
+      }
 
-// configurate when page is loaded
-function start() { 
+      // configurate when page is loaded
+      function start() {
+        var unique = Math.floor(Date.now() / 1000); // unique id in comunication with HA
+        var userpass = mqtt.getCreds("webreadwriter", "webbskrifvare"); // use provided MQTT credentials
+        //var  userpass = mqtt.getCreds('', '');                           // get MQTT credentials in anoter way
 
+        if (document.URL.startsWith("https"))
+          mqtt.config = {
+            userName: userpass.user,
+            password: userpass.pass,
+            source: userpass.source,
+            host: "mqtt.skannea.duckdns.org",
+            port: 443,
+            useSSL: true,
+            client: "qdashremote_" + unique,
+            timeout: 2000, // ms
+            debug: log,
+            log: timelog,
+          };
+        else
+          mqtt.config = {
+            userName: userpass.user,
+            password: userpass.pass,
+            source: userpass.source,
+            host: "192.168.0.111",
+            port: 1884,
+            useSSL: false,
+            client: "qdashlocal_" + unique,
+            timeout: 2000, // ms
+            debug: log,
+            log: timelog,
+          };
 
-    var unique = Math.floor(Date.now() / 1000);   // unique id in comunication with HA
-    var  userpass = mqtt.getCreds('webreadwriter', 'webbskrifvare'); // use provided MQTT credentials  
-  //var  userpass = mqtt.getCreds('', '');                           // get MQTT credentials in anoter way  
-    
-    if (document.URL.startsWith('https')) mqtt.config = 
-       {
-       userName :         userpass.user, 
-       password :         userpass.pass,
-       source :           userpass.source, 
-       host :             'mqtt.skannea.duckdns.org',
-       port :             443,
-       useSSL :           true,
-       client :           'qdashremote_'+ unique,
-       timeout :          2000,  // ms
-       debug: log,
-       log: timelog
-       };
-    else  mqtt.config = 
-       {
-       userName :         userpass.user, 
-       password :         userpass.pass,
-       source :           userpass.source, 
-       host :             '192.168.0.111',
-       port :             1884,
-       useSSL :           false, 
-       client :           'qdashlocal_'+ unique,
-       timeout :          2000,  // ms
-       debug: log,
-       log: timelog
-       };      
+        mqtt.config.birthTopic = "fromweb/clientup";
+        mqtt.config.lastwillTopic = "fromweb/clientdown";
 
-    mqtt.config.birthTopic =    'fromweb/clientup';     
-    mqtt.config.lastwillTopic = 'fromweb/clientdown';     
+        mqtt.config.onSuccess =
+          // ----------------------------------
+          function () {
+            statusline("MQTT connection");
+            qd.onSuccess();
+            mqtt.subscribe("toweb/storysave/logname"); //§§
+            mqtt.subscribe("toweb/storysave/power"); //§§
+            mqtt.subscribe("toweb/storysave/periodic"); //§§
+          };
 
+        mqtt.config.onMessage =
+          // ----------------------------------
+          function (topic, data) {
+            qd.onMessage(topic, data);
+            myLogging(topic, data); //§§
+          };
 
-    mqtt.config.onSuccess = 
-      // ----------------------------------
-      function( ) {
-        statusline('MQTT connection');
-        qd.onSuccess();
-        mqtt.subscribe( 'toweb/storysave/logname' ); //§§
-        mqtt.subscribe( 'toweb/storysave/power' ); //§§
-        mqtt.subscribe( 'toweb/storysave/periodic' ); //§§
-      };
-     
-    mqtt.config.onMessage = 
-      // ----------------------------------
-      function ( topic, data ){ 
-        qd.onMessage( topic, data );
-        myLogging( topic, data ); //§§ 
-      } 
-      
-    mqtt.config.onFailure = 
-      // ----------------------------------
-      function ( err ){
-        statusline('MQTT connection failed: ' + err );
-      } 
-      
-    
-    qd.config = 
-    {
-       stateTopic :       'toweb/qdash/state',     // HA --> this app
-       buttonTopic :      'fromweb/qdash/button',  // this app --> HA
-       requestTopic :     'fromweb/qdash/request', // this app --> HA 
-       responseTopic :    'toweb/qdash/response',  // HA --> this app
-       key :               unique,
-       //columns :          qd.getUrlParam('columns', '2' ),
-       //width :            qd.getUrlParam('width', '100' ), // % of view width
-       //debug: log,
-       log: timelog
-       
-    };
+        mqtt.config.onFailure =
+          // ----------------------------------
+          function (err) {
+            statusline("MQTT connection failed: " + err);
+          };
 
-    powerChart = new Chart(document.getElementById("powergraph"), powerChartConfig );
-    tempChart = new Chart(document.getElementById("tempgraph"), tempChartConfig );
+        qd.config = {
+          stateTopic: "toweb/qdash/state", // HA --> this app
+          buttonTopic: "fromweb/qdash/button", // this app --> HA
+          requestTopic: "fromweb/qdash/request", // this app --> HA
+          responseTopic: "toweb/qdash/response", // HA --> this app
+          key: unique,
+          //columns :          qd.getUrlParam('columns', '2' ),
+          //width :            qd.getUrlParam('width', '100' ), // % of view width
+          //debug: log,
+          log: timelog,
+        };
 
-    
-    // initiate page 
-    qd.begin(); 
-    // start connection attempts
-    mqtt.begin();
-    // when connected --> onSuccess
-    // when message   --> onMessage   
-    // when failure   --> onFailure + new connection attempt    
-}
+        powerChart = new Chart(
+          document.getElementById("powergraph"),
+          powerChartConfig
+        );
+        tempChart = new Chart(
+          document.getElementById("tempgraph"),
+          tempChartConfig
+        );
 
+        // initiate page
+        qd.begin();
+        // start connection attempts
+        mqtt.begin();
+        // when connected --> onSuccess
+        // when message   --> onMessage
+        // when failure   --> onFailure + new connection attempt
+      }
 
-const powerChartConfig = {
-         type: 'line',
-         data: {
-           labels: [],
-           datasets: [{
-               label: 'Momentan effekt',
-               yAxisID: 'y1',
-               data: [],
-               fill: false,
-               tension: 0.3,
-               spanGaps: true,      
-               borderColor: 'blue',
-           },{
-               label: 'Skrivbordslampan',
-               yAxisID: 'y2',
-               stepped: true, 
-               data: [],
-               fill: true,
-               borderColor: 'green',
-               backgroundColor: 'green',
-               pointStyle: false
-           }]
-         },
-         options: {
-           responsive: false,
-
-           scales: {
-                   x: {
-          type: "time",
-                time: {
-                    displayFormats: {
-                        second: 'mm:ss'
-                    }
-                   
-                },
-          parsing: false
+      const powerChartConfig = {
+        type: "line",
+        data: {
+          labels: [],
+          datasets: [
+            {
+              label: "Momentan effekt",
+              yAxisID: "y1",
+              data: [],
+              fill: false,
+              tension: 0.3,
+              spanGaps: true,
+              borderColor: "blue",
+            },
+            {
+              label: "Skrivbordslampan",
+              yAxisID: "y2",
+              stepped: true,
+              data: [],
+              fill: true,
+              borderColor: "green",
+              backgroundColor: "green",
+              pointStyle: false,
+            },
+          ],
         },
+        options: {
+          responsive: false,
 
+          scales: {
+            x: {
+              type: "time",
+              time: {
+                displayFormats: {
+                  second: "mm:ss",
+                },
+              },
+              parsing: false,
+            },
 
- 
-             y1: {
-        type: 'linear',
-        position: 'left',
-        stack: 'xx',
-        stackWeight: 10,
-               suggestedMin: 0,
-               suggestedMax: 5000
-             },
-             y2: {
-        type: 'category',
-        labels: ['on', 'off'],
-        offset: true,
-        position: 'left',
-        stack: 'xx',
-        stackWeight: 1,
-             },
-           }
+            y1: {
+              type: "linear",
+              position: "left",
+              stack: "xx",
+              stackWeight: 10,
+              suggestedMin: 0,
+              suggestedMax: 5000,
+            },
+            y2: {
+              type: "category",
+              labels: ["on", "off"],
+              offset: true,
+              position: "left",
+              stack: "xx",
+              stackWeight: 1,
+            },
+          },
+        },
+      };
 
-         },
+      const tempChartConfig = {
+        type: "line",
+        data: {
+          labels: [],
+          datasets: [
+            {
+              label: "Bakom",
+              data: [],
+              fill: false,
+              tension: 0.3,
+              spanGaps: true,
+              borderColor: "red",
+            },
+            {
+              label: "Framför",
+              data: [],
+              fill: false,
+              tension: 0.3,
+              spanGaps: true,
+              borderColor: "green",
+            },
+          ],
+        },
+        options: {
+          responsive: false,
+          scales: {
+            x: {
+              display: true,
+              title: {
+                display: true,
+                text: "",
+              },
+            },
+            y: {
+              display: true,
+              title: {
+                display: true,
+                text: "temp",
+              },
+              //suggestedMin: -10,
+              //suggestedMax: 10
+            },
+          },
+        },
+      };
 
-       };
+      var story = storystore;
 
+      function myLogging(topic, data) {
+        log("topic:" + topic);
+        if (topic == "toweb/storysave/logname") myTable(data);
+        else if (topic == "toweb/storysave/power") powerDiagram(data);
+        else if (topic == "toweb/storysave/periodic") tempDiagram(data);
+      }
 
-const tempChartConfig = {
-         type: 'line',
-         data: {
-           labels: [],
-           datasets: [{
-               label: 'Bakom',
-               data: [],
-               fill: false,
-               tension: 0.3,
-               spanGaps: true,      
-               borderColor: 'red',
-           },{
-               label: 'Framför',
-               data: [],
-               fill: false,
-               tension: 0.3,
-               spanGaps: true,      
-               borderColor: 'green',
-           }]
-         },
-         options: {
-           responsive: false,
-           scales: {
-             x: {
-               display: true,
-               title: {
-                 display: true,
-                 text: ''
-               }
-             },
-             y: {
-               display: true,
-               title: {
-                 display: true,
-                 text: 'temp'
-               },
-               //suggestedMin: -10,
-               //suggestedMax: 10
-             }
-           }
+      function powerDiagram(data) {
+        log("powerDiagram");
 
-         },
+        var ax = story.stateCols(data);
+        //log(ax.stamps[0]);
+        var newest = new Date(ax.stamps[ax.stamps.length - 1]);
+        var oldest = new Date(ax.stamps[0]);
+        //newest.setTime( newest.getTime() + 10000 );
+        //oldest.setTime( oldest.getTime() - 10000 );
+        const roundTo = 1000;
+        oldest = Math.floor(oldest / roundTo) * roundTo;
+        newest = Math.ceil(newest / roundTo) * roundTo;
+        //log(oldest);
+        //log(newest);
 
-       };
+        powerChart.options.scales["x"].max = newest;
+        powerChart.options.scales["x"].min = newest - 60000;
 
+        //log(xDate.getTime());
+        //var x = xDate.getTime();
+        //x = x+1800000;
+        //xDate.setTime(x);
+        //log(xDate.toISOString());
+        //log(xDate.toLocaleDateString("SE"));
+        //log(xDate.toLocaleTimeString("SE"));
+        powerChart.data.labels = ax.stamps;
+        powerChart.data.datasets[0].data = ax.states[0];
+        powerChart.data.datasets[1].data = ax.states[1];
+        powerChart.update();
+      }
 
-var story = storystore;
+      function tempDiagram(data) {
+        log("tempDiagram");
+        var ax = story.stateCols(data);
+        tempChart.data.labels = story.to_hm(ax.stamps);
+        tempChart.data.datasets[0].data = ax.states[0];
+        tempChart.data.datasets[1].data = ax.states[1];
+        tempChart.update();
+      }
 
-function myLogging( topic, data ) {
-    log( 'topic:'+topic); 
-    if (topic == 'toweb/storysave/logname') myTable(data);
-    else
-    if (topic == 'toweb/storysave/power') powerDiagram(data);       
-    else
-    if (topic == 'toweb/storysave/periodic') tempDiagram(data);       
-}     
+      function myTable(data) {
+        log("myTable");
+        var v = story.idstateRows(data);
 
-function powerDiagram( data ) {
-   log('powerDiagram');
-   
-   var ax = story.stateCols( data );
-   //log(ax.stamps[0]);
-   var newest = new Date(ax.stamps[ax.stamps.length-1]);
-   var oldest = new Date(ax.stamps[0]);
-   //newest.setTime( newest.getTime() + 10000 );
-   //oldest.setTime( oldest.getTime() - 10000 );
-   const roundTo = 1000;
-   oldest = Math.floor( oldest / roundTo) * roundTo;
-   newest = Math.ceil( newest / roundTo) * roundTo;
-   //log(oldest);
-   //log(newest);
-   
-   powerChart.options.scales['x'].max = newest;
-   powerChart.options.scales['x'].min = newest - 60000;
-   
-   
-   //log(xDate.getTime());
-   //var x = xDate.getTime();
-   //x = x+1800000;
-   //xDate.setTime(x);
-   //log(xDate.toISOString());
-   //log(xDate.toLocaleDateString("SE"));
-   //log(xDate.toLocaleTimeString("SE"));
-   powerChart.data.labels = ax.stamps; 
-   powerChart.data.datasets[0].data = ax.states[0];
-   powerChart.data.datasets[1].data = ax.states[1];
-   powerChart.update();
-}     
-
-function tempDiagram( data ) {
-   log('tempDiagram');
-   var ax = story.stateCols( data );
-   tempChart.data.labels = story.to_hm(ax.stamps);
-   tempChart.data.datasets[0].data = ax.states[0];
-   tempChart.data.datasets[1].data = ax.states[1];
-   tempChart.update();
-}     
-
-
-
-function myTable( data ) {
-   log('myTable');
-   var v = story.idstateRows( data );
-    
-   var html = '<table>';
-   for ( var n=0; n<v.length; n++ ) {  
-             html += `<tr>
+        var html = "<table>";
+        for (var n = 0; n < v.length; n++) {
+          html += `<tr>
                        <td style="color:blue">${v[n].stamp}</td>
                        <td style="color:white">${v[n].id}</td>
                        <td style="color:red">${v[n].state}</td>
-                      </tr>`; 
-          }
-           html += '</table>';
-          document.getElementById( 'multistory' ).innerHTML = html;
-}
+                      </tr>`;
+        }
+        html += "</table>";
+        document.getElementById("multistory").innerHTML = html;
+      }
 
-function myLog( data ) {
-   var v = story.textRows( data );
-   var html = '<b>History test</b>';
-   for ( var n=0; n<v.length; n++ ) 
-      html += `<br>At ${v[n][0]} ${v[n][1]} took place.`
-   document.getElementById( 'multistory' ).innerHTML = html;
-}
+      function myLog(data) {
+        var v = story.textRows(data);
+        var html = "<b>History test</b>";
+        for (var n = 0; n < v.length; n++)
+          html += `<br>At ${v[n][0]} ${v[n][1]} took place.`;
+        document.getElementById("multistory").innerHTML = html;
+      }
+    </script>
+  </head>
 
+  <body onLoad="start()">
+    <canvas id="tempgraph" aria-label="ctx" height="250" width="400"></canvas>
+    <canvas id="powergraph" aria-label="ctx" height="250" width="400"></canvas>
 
-     </script>    
-   </head>
-
-
-<body onLoad="start()"> 
-  
-   <canvas id="tempgraph" aria-label="ctx" height="250" width="400"></canvas>
-   <canvas id="powergraph" aria-label="ctx" height="250" width="400"></canvas>
-     
-
-   <div class="nobox">
+    <div class="nobox">
       <p id="statusline"></p>
-      <p>This is a test of chart.js</p> 
-   </div>   
- <div section  fill="darkgrey" columns="6">      
-   <div class="nobox halfsize" id="multistory">
-   </div>  
-   
-</div>   
-  
-<div section="first"  show fill="black" columns="4">   
-      <div entity="sensor.eta_temperature"            name="Vardagsrummet" ></div>
-      <div entity="sensor.vicker_room_temperature"                         ></div>
-</div>
+      <p>This is a test of chart.js</p>
+    </div>
+    <div section fill="darkgrey" columns="6">
+      <div class="nobox halfsize" id="multistory"></div>
+    </div>
 
-    
-
-</body>
- 
+    <div section="first" show fill="black" columns="4">
+      <div entity="sensor.eta_temperature" name="Vardagsrummet"></div>
+      <div entity="sensor.vicker_room_temperature"></div>
+    </div>
+  </body>
 </html>
-
-     

@@ -1,61 +1,57 @@
 # services.yaml
 storystore:
-  name: Storystore 
+  name: Storystore
   description: This service uses an entity for storing records with time stamp and a set of strings. The entity's state is updated with the time stamp. One and only one of restore, logstring, logidstate or logstate shall be provided.
   fields:
     useentity:
       description: entity to use for storing records
       required: true
-      selector: 
-          entity:
-    useattribute: 
-      description: attribute to use for storing records. 
+      selector:
+        entity:
+    useattribute:
+      description: attribute to use for storing records.
       default: story
-      selector: 
+      selector:
         text:
-    usestamp: 
-      description: sets the format to use for records. 
+    usestamp:
+      description: sets the format to use for records.
       default: full
       selector:
         select:
           options:
-            - label: like 2023-03-26 13:47:55.4545 
+            - label: like 2023-03-26 13:47:55.4545
               value: full
-            - label: like 13:47:55 
+            - label: like 13:47:55
               value: hms
-            - label: like 13:47 
+            - label: like 13:47
               value: hm
-    max: 
-      description: the maximum of records to be stored. Latest record is put last and the oldest one is removed when necessary.  
+    max:
+      description: the maximum of records to be stored. Latest record is put last and the oldest one is removed when necessary.
       default: 10
       selector:
         number:
           min: 2
           max: 1000
           mode: box
-    restore: 
+    restore:
       description: attribute is set to this value
       default:
-      selector: 
+      selector:
         text:
     logstring:
-      description: complete string to put after the timestamp in record 
+      description: complete string to put after the timestamp in record
       default:
-      selector: 
+      selector:
         text:
-    logidstate: 
-      description: an array of entity ids [ID1,ID2,ID3,...]. The string to put in record is formated as ID1|STATE1|ID2|STATE2... 
+    logidstate:
+      description: an array of entity ids [ID1,ID2,ID3,...]. The string to put in record is formated as ID1|STATE1|ID2|STATE2...
       default:
       example: 2023-03-26 13:47:55.4545|light.lamp|ON|sensor.temp|21.4;
-      selector: 
+      selector:
         text:
-    logstate: 
-      description: an array of entity ids [ID1,ID2,ID3,...]. The string to put in record is formated as STATE1|STATE2|STATE3... 
+    logstate:
+      description: an array of entity ids [ID1,ID2,ID3,...]. The string to put in record is formated as STATE1|STATE2|STATE3...
       default:
       example: 2023-03-26 13:47:55.4545|ON|21.4|4711;
-      selector: 
+      selector:
         text:
-
-
-
-
